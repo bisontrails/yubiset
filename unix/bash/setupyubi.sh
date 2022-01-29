@@ -23,7 +23,7 @@ pin_setup()
 {
 	echo
 	echo "Remember: Default PIN is 123456 | Default Admin PIN is 12345678"
-	{ cat "${pin_input}" | "${YUBISET_GPG_BIN}" --command-fd=0 --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Setting the PINs ran into an error." ; }
+	{ "${YUBISET_GPG_BIN}" --command-file="${pin_input}" --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Setting the PINs ran into an error." ; }
 	echo "PIN setup successfull!"
 }
 
@@ -59,21 +59,26 @@ personal_info()
 	echo
 	if $(are_you_sure "Write personal information to your Yubikey") ; then
 		echo Now writing..
-		{ cat "${pers_info_input}" | "${YUBISET_GPG_BIN}" --command-fd=0 --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Writing personal data to Yubikey ran into an error." ; }
+		{ "${YUBISET_GPG_BIN}" --command-file="${pers_info_input}" --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Writing personal data to Yubikey ran into an error." ; }
 		echo ..Success!
 	fi
 }
 
+keyattr() {
+	echo "setting key-attr to 4096"
+	{ "${YUBISET_GPG_BIN}" --command-file="${keyattr_input}" --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Chaging key-attr to 4096 for yubikey." ; }
+}
+
 keytocard() {
 	echo "Now moving keys.."
-	{ cat "${keytocard_input}" | "${YUBISET_GPG_BIN}" --command-fd=0 --status-fd=1 --pinentry-mode loopback --passphrase "${passphrase}" --edit-key --expert "${key_id}" >/dev/null 2>&1 ; } || { cleanup; end_with_error "Moving GPG keys to Yubikey ran into an error." ; }
+	{ "${YUBISET_GPG_BIN}" --command-file="${keytocard_input}" --status-fd=1 --edit-key --expert "${key_id}" >/dev/null 2>&1 ; } || { cleanup; end_with_error "Moving GPG keys to Yubikey ran into an error." ; }
 	echo ..Success!
 }
 
 if [[ -z "${yubiset_main_script_runs}" ]] ; then
 	if [[ -z "${1}" ]] ; then { cleanup; end_with_error "Missing arg 1: Full name." ; } fi
 	declare -r user_name="${1}"
-	if [[ -z "${2}" ]] ; then { cleanup; end_with_error "Missing arg 2: EMail address." ; } fi
+	if [[ -z "${2}" ]] ; then { cleanup; end_with_error "Missing arg 2: Email address." ; } fi
 	declare -r user_email="${2}"
 	if [[ -z "${3}" ]] ; then { cleanup; end_with_error "Missing arg 3: PGP key ID." ; } fi
 	# Sanitize the key id: Remove trailing 0x if it exists.
@@ -104,6 +109,12 @@ if $(are_you_sure "Should we first setup your Yubikey's PIN and Admin PIN") ; th
 #
 echo
 if $(are_you_sure "Should personal info be modified") ; then personal_info ; fi
+
+#
+# KEYATTR SECTION
+#
+echo
+if $(are_you_sure "Should key-attr be updated to 4096") ; then keyattr ; fi
 
 #
 # KEYTOCARD SECTION

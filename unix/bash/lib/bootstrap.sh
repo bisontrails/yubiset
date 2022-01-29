@@ -56,6 +56,12 @@ if [[ -z "${gpg_home}" ]]; then
 	read -r _unused gpg_home <<< "${gpg_home}" || { cleanup; end_with_error "Could not determine gpg's home dir.";}
 	# Trim, see https://stackoverflow.com/a/3232433
 	gpg_home="$(echo -e "${gpg_home}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+	unset IFS
+fi
+
+if [[ ! -d "${gpg_home}" ]]; then
+	echo "GPG dir does not exist in ${gpg_home}, initializing now"
+	${YUBISET_GPG_BIN} --list-keys || end_with_error "issue creating ~/.gnupg"
 fi
 
 #

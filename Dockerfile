@@ -6,10 +6,11 @@
 
 FROM archlinux:latest
 
-RUN groupadd -r usergroup && useradd --no-log-init -r -g usergroup user
-RUN mkdir /home/user
-ADD yubiset /home/user/yubiset
-RUN find /home/user/yubiset -exec chown user:usergroup {} \;
+RUN pacman -Sy --noconfirm libusb-compat
+
+RUN useradd -ms /bin/bash user
+ADD . /home/user/yubiset
+RUN find /home/user/yubiset -exec chown user:user {} \;
 #rw-r--r--
 RUN find /home/user/yubiset -type f -iname "*" -exec chmod 0644 {} \;
 #rwx-r--r--

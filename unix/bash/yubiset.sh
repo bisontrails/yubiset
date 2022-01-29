@@ -6,6 +6,7 @@ declare -r lib_dir=lib
 # Always make sure that this is declared after bootstrap.sh is sourced in order to make sure, temp dir handling is done correctly.
 declare -r yubiset_main_script_runs=true
 
+declare -r keyattr_input="${input_dir}/keyattr.input"
 declare -r keygen_input="${input_dir}"/keygen.input
 declare -r keygen_input_copy="${yubiset_temp_dir}"/keygen.input.copy
 if [[ "${1}" -eq "4" ]]; then 
