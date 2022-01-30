@@ -3,8 +3,6 @@
 #
 # Arg 1: Full name
 # Arg 2: email address
-# Arg 3: PGP key ID
-# Optional Arg 4: Passphrase (will be asked for if omitted)
 #
 
 #
@@ -19,11 +17,19 @@ cleanup()
 	remove_tmp_dir_if_standalone
 }
 
+keygen()
+{
+	echo
+	echo "Generating Keys on Device"
+	{ "${YUBISET_GPG_BIN}" --command-file="${ondevice_keygen_input}" --status-fd=1 --card-edit --expert ; } || { cleanup; end_with_error "Generating Keys Error" ; }
+
+}
+
 pin_setup()
 {
 	echo
 	echo "Remember: Default PIN is 123456 | Default Admin PIN is 12345678"
-	{ "${YUBISET_GPG_BIN}" --command-file="${pin_input}" --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Setting the PINs ran into an error." ; }
+	{ "${YUBISET_GPG_BIN}" --command-file="${pin_input}" --status-fd=1 --card-edit --expert ; } || { cleanup; end_with_error "Setting the PINs ran into an error." ; }
 	echo "PIN setup successfull!"
 }
 
@@ -53,40 +59,27 @@ personal_info()
 	echo "${sex}" >> "${pers_info_input}"
 	echo "login" >> "${pers_info_input}"
 	echo "${user_email}" >> "${pers_info_input}"
-	echo "url" >> "${pers_info_input}"
-	echo "https://sks-keyservers.net/pks/lookup?op=get&search=0x${key_id}" >> "${pers_info_input}"
+
 
 	echo
 	if $(are_you_sure "Write personal information to your Yubikey") ; then
 		echo Now writing..
-		{ "${YUBISET_GPG_BIN}" --command-file="${pers_info_input}" --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Writing personal data to Yubikey ran into an error." ; }
+		{ "${YUBISET_GPG_BIN}" --command-file="${pers_info_input}" --status-fd=1 --card-edit --expert  ; } || { cleanup; end_with_error "Writing personal data to Yubikey ran into an error." ; }
 		echo ..Success!
 	fi
 }
 
 keyattr() {
-	echo "setting key-attr to 4096"
-	{ "${YUBISET_GPG_BIN}" --command-file="${keyattr_input}" --status-fd=1 --card-edit --expert >/dev/null 2>&1 ; } || { cleanup; end_with_error "Chaging key-attr to 4096 for yubikey." ; }
+	echo "setting key-attr to use ECC"
+	{ "${YUBISET_GPG_BIN}" --command-file="${keyattr_input}" --status-fd=1 --card-edit --expert ; } || { cleanup; end_with_error "Chaging key-attr to 4096 for yubikey." ; }
 }
 
-keytocard() {
-	echo "Now moving keys.."
-	{ "${YUBISET_GPG_BIN}" --command-file="${keytocard_input}" --status-fd=1 --edit-key --expert "${key_id}" >/dev/null 2>&1 ; } || { cleanup; end_with_error "Moving GPG keys to Yubikey ran into an error." ; }
-	echo ..Success!
-}
 
 if [[ -z "${yubiset_main_script_runs}" ]] ; then
 	if [[ -z "${1}" ]] ; then { cleanup; end_with_error "Missing arg 1: Full name." ; } fi
 	declare -r user_name="${1}"
 	if [[ -z "${2}" ]] ; then { cleanup; end_with_error "Missing arg 2: Email address." ; } fi
 	declare -r user_email="${2}"
-	if [[ -z "${3}" ]] ; then { cleanup; end_with_error "Missing arg 3: PGP key ID." ; } fi
-	# Sanitize the key id: Remove trailing 0x if it exists.
-	if [[ "${3}" == 0x* ]] ; then declare -r key_id="${3:2}" ; else declare -r key_id="${3}" ; fi
-	if [[ -z "${4}" ]] ; then 
-		read -s -p "Please enter your passphrase: " passphrase
-	else declare -r passphrase="${4}" ; fi
-	
 fi
 
 declare -r given_name="${user_name% *}"
@@ -120,4 +113,4 @@ if $(are_you_sure "Should key-attr be updated to 4096") ; then keyattr ; fi
 # KEYTOCARD SECTION
 #
 echo
-if $(are_you_sure "Move your subkeys to your Yubikey") ; then keytocard ; fi
+if $(are_you_sure "Generate Keys on Yubikey Device") ; then keygen ; fi

@@ -9,6 +9,9 @@ declare -r yubiset_main_script_runs=true
 declare -r keyattr_input="${input_dir}/keyattr.input"
 declare -r keygen_input="${input_dir}"/keygen.input
 declare -r keygen_input_copy="${yubiset_temp_dir}"/keygen.input.copy
+declare -r ondevice_keygen_template="${input_dir}/ondevicekeygen.input.template"
+declare -r ondevice_keygen_input="${input_dir}/ondevicekeygen.input"
+
 if [[ "${1}" -eq "4" ]]; then 
 	declare -r subkey_length=2048
 	declare -r subkeys_input="${input_dir}"/subkeys_2048.input
@@ -93,94 +96,19 @@ echo
 echo "First, we need a little information from you."
 read -p "Please enter your full name: " user_name
 read -p "Please enter your full e-mail address: " user_email
-read -s -p "Please enter your passphrase: " passphrase
 echo
+passphrase=""
 
-. "${lib_dir}"/branding.sh
-silentCopy "${keygen_input}" "${keygen_input_copy}"
-echo "${branded_user_name}" >> "${keygen_input_copy}"
-echo "${user_email}" >> "${keygen_input_copy}"
 
-# Some characters are not supported in key comments. See https://github.com/JanMosigItemis/yubiset/issues/4
-declare -r sanitized_user_comment=$( echo "${branded_user_comment}" | sed -r 's/[\(\)]+//g' )
-if [[ ! -z "${sanitized_user_comment}" ]]; then echo "Found custom user comment branding: ${sanitized_user_comment}" ; fi
-echo "${sanitized_user_comment}" >> "${keygen_input_copy}"
+sed "s/FULL_NAME/${user_name}/g" ${ondevice_keygen_template} > ${ondevice_keygen_input}
+sed -i "s/EMAIL/${user_email}/g" ${ondevice_keygen_input}
 
-# Master key generation
-echo "Now generating the master key. This may take a while.."
-{ cat "${keygen_input_copy}" | "${YUBISET_GPG_BIN}" --command-fd=0 --status-fd=1 --expert --full-gen-key --pinentry-mode loopback --passphrase "${passphrase}" ; } || { cleanup; end_with_error "Generating the keypair raised an error." ; }
-echo ..Success!
-
-# Print secret keys, reverse order, find all lines beginning with "sec", extract 5th token and return.
-# The last secret key displayed will be the key just created, thus the reversal of print order.
-# Line example: sec:u:4096:1:91E21FE19B31FF56:1558085668:1589621668::u:::cC:::+:::23::0:
-declare -r key_id=$( { "${YUBISET_GPG_BIN}" -K --with-colons | tac | grep -i -m1 "sec" | cut -d ":" -f5 ; } || { cleanup; end_with_error "Could not figure out id of generated key." ; } )
-
-# tr is used for replacing multiple ::: with only one :. Its a sort of normalization of the output of gpg -K
-declare -r key_fpr=$( { "${YUBISET_GPG_BIN}" -K --with-colons | tac | grep -i -m1 "fpr" | tr -s ":" | cut -d ":" -f2;} || { cleanup; end_with_error "Could not figure out fingerprint of generated key."; } )
-
-# Subkey generation
-echo
-echo Now generating subkeys. This may take even longer..
-{ cat "${subkeys_input}" | "${YUBISET_GPG_BIN}" --command-fd=0 --status-fd=1 --expert --edit-key --pinentry-mode loopback --passphrase "${passphrase}" "${key_id}" ; } || { cleanup; end_with_error "Generating subkeys raised an error." ; }
-echo ..Success!
-
-#
-# BACKUP SECTION
-#
-echo
-echo We are about to backup the generated stuff..
-declare -r key_dir="${key_backups_dir}/${key_id}"
-printf "\t"
-echo "Revocation certificate: ${key_dir}/${key_id}.rev"
-
-mkdir -p "${key_dir}" || { cleanup; end_with_error "Could not generate copy of revocation certificate." ; }
-
-printf "\t"
-echo "Pub key: ${key_dir}/${key_id}.pub.asc"
-{ "${YUBISET_GPG_BIN}" --export --armor --pinentry-mode loopback --passphrase "${passphrase}" "${key_id}" > "${key_dir}/${key_id}.pub.asc" ; } || { cleanup; end_with_error "Could not generate backup of pub key." ; }
-
-printf "\t"
-echo "Private master key: ${key_dir}/${key_id}.priv.asc"
-{ "${YUBISET_GPG_BIN}" --export-secret-keys --armor --pinentry-mode loopback --passphrase "${passphrase}" "${key_id}" > "${key_dir}/${key_id}.priv.asc" ; } || { cleanup; end_with_error "Could not create backup of priv master key." ; }
-
-printf "\t"
-echo "Private sub keys: ${key_dir}/${key_id}.sub_priv.asc"
-{ "${YUBISET_GPG_BIN}" --export-secret-subkeys --armor --pinentry-mode loopback --passphrase "${passphrase}" "${key_id}" > "${key_dir}/${key_id}.sub_priv.asc" ; } || { cleanup; end_with_error "Could not create backup of priv sub key." ; }
-echo ..Success!
-
-#
-# REMOVE MASTER KEY SECTION
-#
-echo
-echo "To increase security, it is a good idea to delete the master key."
-if $(are_you_sure "Delete master key") ; then delete_master_key; fi
-
-#
-# KEY SERVER UPLOAD SECTION
-#
-echo
-if $(are_you_sure "Should the generated public key be uploaded to your configured keyserver") ; then
-	echo Dryrun: gpg --send-keys "${key_id}"
-fi
-
-#
-# KEY GENERATION RESULT OVERVIEW
-#
-echo 
-pretty_print "Key generation result overview"
-pretty_print ""
-pretty_print "Your key id: ${key_id}"
-pretty_print "Your key fingerprint: ${key_fpr}"
-pretty_print "Backups are in: ${key_dir}"
 
 #
 # YUBIKEY SECTION
 #
-echo
-if ! $(are_you_sure "Should we continue with setting up your YubiKey") ; then cleanup; exit 0 ; fi
 
-echo Checking if we can access your Yubikey..
+echo "Checking if we can access your Yubikey.."
 (. ./findyubi.sh) || { cleanup; end_with_error "Could not communicate with your Yubikey." ; }
 echo "Ok, Yubikey communication is working!"
 
