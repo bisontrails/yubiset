@@ -100,8 +100,8 @@ echo
 passphrase=""
 
 
-sed "s/FULL_NAME/${user_name}/g" ${ondevice_keygen_template} > ${ondevice_keygen_input}
-sed -i "s/EMAIL/${user_email}/g" ${ondevice_keygen_input}
+sed "s/FULL_NAME/${user_name}/g" "${ondevice_keygen_template}" > "${ondevice_keygen_input}"
+sed -i "" "s/EMAIL/${user_email}/g" "${ondevice_keygen_input}"
 
 
 #

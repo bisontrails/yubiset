@@ -128,7 +128,7 @@ find_slot_heuristic()
 	# PROCESS DEBUG LOG
 	#
 	echo Processing debug log..
-	readarray -t reader_port_candidates <<< $( { cat ${scdaemon_log} | grep "detected" | cut -d "'" -f2 ; } || { cleanup; end_with_error "Could not parse scdaemon log." ; } )
+	declare -a reader_port_candidates=$( { cat ${scdaemon_log} | grep "detected" | cut -d "'" -f2 ; } || { cleanup; end_with_error "Could not parse scdaemon log." ; } )
 	for reader_port_candidate in "${reader_port_candidates[@]}"
 	do
 		reader_port_candidate="${reader_port_candidate% *}"
