@@ -64,6 +64,14 @@ personal_info()
 	fi
 }
 
+enable_touch() {
+	echo "Setting touch for Yubikey"
+	echo "Note: Admin PIN required, and will be required to be entered into the terminal, not the pinentry UX"
+	ykman openpgp keys set-touch --force sig fixed
+	ykman openpgp keys set-touch --force aut fixed
+	ykman openpgp keys set-touch --force enc fixed
+}
+
 keyattr() {
 	echo "setting key-attr to use ECC"
 	{ "${YUBISET_GPG_BIN}" --command-file="${keyattr_input}" --status-fd=1 --card-edit --expert ; } || { cleanup; end_with_error "Chaging key-attr to 4096 for yubikey." ; }
@@ -109,3 +117,9 @@ if $(are_you_sure "Should key-attr be updated to use ECC keys instead of RSA") ;
 #
 echo
 if $(are_you_sure "Generate Keys on Yubikey Device") ; then keygen ; fi
+
+#
+# Enforce Touch Settings
+#
+echo
+if $(are_you_sure "Enable Touch for encrypt, sign, authenticate") ; then enable_touch ; fi
