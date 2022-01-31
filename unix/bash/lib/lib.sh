@@ -1,3 +1,6 @@
+SUCCESS="..Success!"
+NEW_SECTION="#########################"
+
 # Exit with code 1.
 #
 # Arg 1: Text to display before exiting.
@@ -90,9 +93,11 @@ silentCopy()
 # Not sure if using gpgconf --kill gpg-agent would be a better approach here
 restart_gpg_agent()
 {
-	echo Now restarting gpg-agent..
+	echo "${NEW_SECTION}"
+	echo "Restarting gpg-agent.."
 	"${YUBISET_GPG_CONNECT_AGENT}" reloadagent '' /bye
-	echo ..Success!
+	echo "${SUCCESS}"
+	echo "${NEW_SECTION}"
 }
 
 #
@@ -100,9 +105,11 @@ restart_gpg_agent()
 #
 restart_scdaemon()
 {
-	echo Now restarting scdaemon..
+	echo "${NEW_SECTION}"
+	echo "Restarting Scdaemon"
 	"${YUBISET_GPG_CONF}" --reload scdaemon
-	echo ..Success!
+	echo "${SUCCESS}"
+	echo "${NEW_SECTION}"
 }
 
 #
@@ -111,8 +118,10 @@ restart_scdaemon()
 reinsert_yubi()
 {
 echo
-echo Please remove your Yubikey
+echo "${NEW_SECTION}"
+echo "Please remove your Yubikey"
 press_any_key
-echo Please insert your Yubikey
+echo "Please insert your Yubikey"
 press_any_key
+echo "${NEW_SECTION}"
 }

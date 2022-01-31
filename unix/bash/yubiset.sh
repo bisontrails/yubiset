@@ -12,13 +12,9 @@ declare -r keygen_input_copy="${yubiset_temp_dir}"/keygen.input.copy
 declare -r ondevice_keygen_template="${input_dir}/ondevicekeygen.input.template"
 declare -r ondevice_keygen_input="${input_dir}/ondevicekeygen.input"
 
-if [[ "${1}" -eq "4" ]]; then 
-	declare -r subkey_length=2048
-	declare -r subkeys_input="${input_dir}"/subkeys_2048.input
-else
-	declare -r subkey_length=4096
-	declare -r subkeys_input="${input_dir}"/subkeys.input
-fi
+declare -r subkey_length=4096
+declare -r subkeys_input="${input_dir}"/subkeys.input
+
 
 declare -r revoke_input="${input_dir}"/revoke.input
 
@@ -45,7 +41,7 @@ cleanup()
 
 create_conf_backup()
 {
-	echo Now making backup copies..
+	echo "Now making backup copies.."
 
 	if [[ -f "${gpg_home}/gpg.conf" ]]; then
 		echo "${gpg_home}/gpg.conf => ${gpg_home}/gpg.conf.backup.by.yubiset"
@@ -56,29 +52,25 @@ create_conf_backup()
 		echo "${gpg_home}/gpg-agent.conf => ${gpg_home}/gpg-agent.conf.backup.by.yubiset"
 		cp -f "${gpg_home}/gpg-agent.conf" "${gpg_home}/gpg-agent.conf.backup.by.yubiset" || { cleanup; end_with_error "Creating backup of gpg-agent.conf failed."; }
 	fi
-	echo ..Success!
+
+	if [[ -f "${gpg_home}/scdaemon.conf" ]]; then
+		echo "${gpg_home}/scdaemon.conf => ${gpg_home}/scdaemon.conf.backup.by.yubiset"
+		cp -f "${gpg_home}/scdaemon.conf" "${gpg_home}/scdaemon.conf.backup.by.yubiset" || { cleanup; end_with_error "Creating backup of gpg-agent.conf failed."; }
+	fi
+	echo "${SUCCESS}"
 	echo
 	echo "Now copying yubiset's conf files.."
 	silentCopy "${conf_dir}/gpg.conf" "${gpg_home}/gpg.conf" || { cleanup; end_with_error "Replacing gpg.conf failed."; }
 	silentCopy "${conf_dir}/gpg-agent.conf" "${gpg_home}/gpg-agent.conf" || { cleanup; end_with_error "Replacing gpg-agent.conf failed."; }
-	echo ..Success!
-}
+	silentCopy "${conf_dir}/scdaemon.conf" "${gpg_home}/scdaemon.conf" || { cleanup; end_with_error "Replacing gpg-agent.conf failed."; }
 
-delete_master_key()
-{
-	echo Removing..
-	{ "${YUBISET_GPG_BIN}" --batch --yes --delete-secret-keys --pinentry-mode loopback --passphrase "${passphrase}" "${key_fpr}" ; } || { cleanup; end_with_error "Could not delete private master key." ; }
-	echo ..Success!
-
-	echo Reimporting private sub keys..
-	{ "${YUBISET_GPG_BIN}" --pinentry-mode loopback --passphrase "${passphrase}" --import "${key_dir}/${key_id}.sub_priv.asc" ; } || { cleanup; end_with_error "Re-import of private sub keys failed." ; }
-	echo ..Success!
+	echo "${SUCCESS}"
 }
 
 #
 # GPG CONF SECTION
 #
-echo "Should your gpg.conf and gpg-agent.conf files be replaced by the ones provided by Yubiset? If you don't know what this is about, it is safe to say 'y' here. Backup copies of the originals will be created first."
+echo "Should your gpg.conf, gpg-agent.conf, and scdaemon.conf files be replaced by the ones provided by Yubiset? If you don't know what this is about, it is safe to say 'y' here. Backup copies of the originals will be created first."
 if $(are_you_sure "Replace files") ; then create_conf_backup; fi
 
 #
@@ -97,7 +89,6 @@ echo "First, we need a little information from you."
 read -p "Please enter your full name: " user_name
 read -p "Please enter your full e-mail address: " user_email
 echo
-passphrase=""
 
 
 sed "s/FULL_NAME/${user_name}/g" "${ondevice_keygen_template}" > "${ondevice_keygen_input}"
@@ -107,24 +98,29 @@ sed -i "" "s/EMAIL/${user_email}/g" "${ondevice_keygen_input}"
 #
 # YUBIKEY SECTION
 #
-
+echo "${NEW_SECTION}"
 echo "Checking if we can access your Yubikey.."
 (. ./findyubi.sh) || { cleanup; end_with_error "Could not communicate with your Yubikey." ; }
 echo "Ok, Yubikey communication is working!"
+echo "${NEW_SECTION}"
 
 #
 # RESET YUBIKEY
 #
 echo
-echo Now we must reset the OpenPGP module of your Yubikey..
+echo "${NEW_SECTION}"
+echo "Now we must reset the OpenPGP module of your Yubikey.."
 (. ./resetyubi.sh) || { cleanup; end_with_error "Resetting YubiKey ran into an error." ; }
+echo "${NEW_SECTION}"
 
 #
 # YUBIKEY SETUP AND KEYTOCARD
 #
 echo
-echo Now we need to setup your Yubikey and move the generated subkeys to it..
+echo "${NEW_SECTION}"
+echo "Now we need to setup your Yubikey and move the generated subkeys to it.."
 (. ./setupyubi.sh) || { cleanup; end_with_error "Setting up your Yubikey ran into an error." ; }
+echo "${NEW_SECTION}"
 
 pretty_print "All done! Exiting now."
 

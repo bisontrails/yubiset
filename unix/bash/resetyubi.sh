@@ -20,7 +20,7 @@ if ! $(are_you_sure "About to reset your YubiKey's OpenPGP module. Continue") ; 
 
 echo Now resetting..
 { "${YUBISET_GPG_CONNECT_AGENT}" >/dev/null 2>&1 < "${input_dir}/resetyubi.input" ; } || { cleanup; end_with_error "Could not properly reset your Yubikey." ; }
-echo ..Success!
+echo "${SUCCESS}"
 
 echo
 pretty_print "PIN: 123456"

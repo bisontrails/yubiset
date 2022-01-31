@@ -19,7 +19,7 @@ cleanup()
 reinsert_yubi_restart_daemons()
 {
 	echo
-	echo Please remove your YubiKey.
+	echo "Please remove your YubiKey."
 	press_any_key
 	
 	#
@@ -34,7 +34,8 @@ reinsert_yubi_restart_daemons()
 	echo
 	restart_scdaemon || { cleanup; end_with_error "Could not restart scdaemon."; }
 	
-	echo Please insert your YubiKey.
+	sleep 1
+	echo "Please insert your YubiKey, then press any key"
 	press_any_key
 }
 
@@ -43,9 +44,11 @@ comm_check()
 	#
 	# COMM CHECK
 	#
-	echo "Now checking if we are able to communicate with your Yubikey.."
-	if [[ "${1}" -eq "no_retry" ]] ; then local retry_start=10 ; else local retry_start=1 ; fi
-	
+	if [[ "${1}" == "no_retry" ]] ; then 
+		local retry_start=10 ; 
+	else 
+		local retry_start=1 ; 
+	fi
 	for (( i=${retry_start}; i<11; i++ ))
 	do
 		local _result=false
@@ -78,7 +81,7 @@ find_slot_heuristic()
 		silentCopy "${gpg_home}/scdaemon.conf" "${gpg_home}/${conf_backup}" || { cleanup; end_with_error "Could not create backup of scdaemon.conf." ; }
 		# A leading empty line is breaking scdaemon<->gpg connection. We do want to put a newline in there only if the file already has contents.
 		if [ -s "${gpg_home}/scdaemon.conf" ] ; then echo >> "${gpg_home}/scdaemon.conf" ; fi
-		echo ..Success!
+		echo "${SUCCESS}"
 	else
 		touch "${gpg_home}/${conf_backup}" || { cleanup; end_with_error "Could not create backup of scdaemon.conf." ; }
 	fi
@@ -142,30 +145,28 @@ find_slot_heuristic()
 	
 	if [[ -z "${reader_port}" ]] ; then { end_with_error "Could not find any viable readers." ; } fi
 	
-	echo Writing scdaemon.conf..
+	echo "Writing scdaemon.conf.."
 	# A leading empty line is breaking scdaemon<->gpg connection. We do want to put a newline in there only if the file already has contents.
 	if [ -s "${gpg_home}/scdaemon.conf" ] ; then echo >> "${gpg_home}/scdaemon.conf" ; fi
 	echo "#Added by yubiset:" >> "${gpg_home}/scdaemon.conf"
 	echo "reader-port \"${reader_port}\"" >> "${gpg_home}/scdaemon.conf"
-	echo ..Success!
+	echo "${SUCCESS}"
 	
 	reinsert_yubi_restart_daemons
 }
 
-pretty_print "Yubikey smartcard slot find and configuration script"
-pretty_print "Version: ${yubiset_version}"
 
 declare -r conf_backup=scdaemon.conf.orig
 declare -r scdaemon_log="${yubiset_temp_dir}/scdaemon.log"
 
 reinsert_yubi_restart_daemons
 
-{ comm_check no_retry ; } || {
+{ comm_check ; } || {
 	echo "..Failed :("
 	if $(are_you_sure "This is most likely because your GPG does not know which card reader to use. Should we try setting things up for you") ; then 
 		find_slot_heuristic
 		comm_check
-		echo ..Success!
+		echo "${SUCCESS}"
 	else
 		cleanup
 		end_with_error "We cannot continue without a properly recognized Yubikey."

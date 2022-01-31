@@ -28,7 +28,14 @@ keygen()
 pin_setup()
 {
 	echo
-	echo "Remember: Default PIN is 123456 | Default Admin PIN is 12345678"
+	echo "Default User PIN is 123456 | Default Admin PIN is 12345678"
+	echo
+	echo "REMEMBER:"
+	echo "User PIN must be AT LEAST 6 characters in Length"
+	echo "Admin PIN must be AT LEAST 8 characters in length"
+	echo "Also, you can use the alphabet in your PIN (e.g., Satosh1Nakam0t0)"
+	echo
+	press_any_key
 	{ "${YUBISET_GPG_BIN}" --command-file="${pin_input}" --status-fd=1 --card-edit --expert ; } || { cleanup; end_with_error "Setting the PINs ran into an error." ; }
 	echo "PIN setup successfull!"
 }
@@ -39,24 +46,12 @@ personal_info()
 	echo "First we must collect some personal info of yours.."
 	read -p "Enter your language pref (e.g. en): " lang_pref
 
-	while true; do
-		local _mw=w
-		read -p "Enter your sex (m/[w]): " _mw
-		case $_mw in
-			[Mm]* ) declare -r sex="m"; break;;
-			[Ww]* ) declare -r sex="w"; break;;
-			""    ) declare -r sex="w"; break;;
-		esac
-	done
-
 	echo "admin" >> "${pers_info_input}"
 	echo "name" >> "${pers_info_input}"
 	echo "${sur_name}" >> "${pers_info_input}"
 	echo "${given_name}" >> "${pers_info_input}"
 	echo "lang" >> "${pers_info_input}"
 	echo "${lang_pref}" >> "${pers_info_input}"
-	echo "sex" >> "${pers_info_input}"
-	echo "${sex}" >> "${pers_info_input}"
 	echo "login" >> "${pers_info_input}"
 	echo "${user_email}" >> "${pers_info_input}"
 
@@ -65,7 +60,7 @@ personal_info()
 	if $(are_you_sure "Write personal information to your Yubikey") ; then
 		echo Now writing..
 		{ "${YUBISET_GPG_BIN}" --command-file="${pers_info_input}" --status-fd=1 --card-edit --expert  ; } || { cleanup; end_with_error "Writing personal data to Yubikey ran into an error." ; }
-		echo ..Success!
+		echo "${SUCCESS}"
 	fi
 }
 
@@ -107,7 +102,7 @@ if $(are_you_sure "Should personal info be modified") ; then personal_info ; fi
 # KEYATTR SECTION
 #
 echo
-if $(are_you_sure "Should key-attr be updated to 4096") ; then keyattr ; fi
+if $(are_you_sure "Should key-attr be updated to use ECC keys instead of RSA") ; then keyattr ; fi
 
 #
 # KEYTOCARD SECTION
