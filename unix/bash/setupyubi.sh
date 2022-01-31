@@ -77,6 +77,16 @@ keyattr() {
 	{ "${YUBISET_GPG_BIN}" --command-file="${keyattr_input}" --status-fd=1 --card-edit --expert ; } || { cleanup; end_with_error "Chaging key-attr to 4096 for yubikey." ; }
 }
 
+print_and_save_pubkey(){
+	"${YUBISET_GPG_BIN}" --export -a ${user_email}
+	"${YUBISET_GPG_BIN}" --export -a ${user_email} > "${user_email}.gpg.pubkey.asc.txt"
+}
+
+print_and_save_sshkey() {
+	"${YUBISET_GPG_BIN}" --export-ssh-key ${user_email}
+	"${YUBISET_GPG_BIN}" --export-ssh-key ${user_email} > "${user_email}.ssh.pubkey.txt"
+}
+
 
 if [[ -z "${yubiset_main_script_runs}" ]] ; then
 	if [[ -z "${1}" ]] ; then { cleanup; end_with_error "Missing arg 1: Full name." ; } fi
@@ -123,3 +133,15 @@ if $(are_you_sure "Generate Keys on Yubikey Device") ; then keygen ; fi
 #
 echo
 if $(are_you_sure "Enable Touch for encrypt, sign, authenticate") ; then enable_touch ; fi
+
+#
+# Extract Pubkey
+# 
+echo
+if $(are_you_sure "Print Public GPG key and save to disk?"); then print_and_save_pubkey ; fi
+
+#
+# Extract SSH Pubkey
+#
+echo
+if $(are_you_sure "Print Public SSH Key and save to disk?"); then print_and_save_sshkey ; fi
