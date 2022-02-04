@@ -17,7 +17,7 @@ A collection of scripts to make OpenPGP key generation and YubiKey manipulation 
   * [Linux](#linux)
   * [Mac](#mac)
 - [Usage](#usage)
-  * [Unix](#unix)
+  * [MacOS/Unix](#macos-unix)
     + [Start here: Key generation & Yubikey setup (all in one script)](#start-here-key-generation--yubikey-setup-all-in-one-script-1)
       - [Move PGP keys to Yubikey only](#move-pgp-keys-to-yubikey-only-1)
       - [Reset Yubikey's OpenPGP module](#reset-yubikeys-openpgp-module-1)
@@ -44,7 +44,7 @@ Use the *GnuPG* package provided with your distribution or follow the instructio
 
 # Usage
 
-## Unix
+## MacOS-Unix
 
 ### Start here: Key generation & Yubikey setup (all in one script)
 ```
