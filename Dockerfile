@@ -4,9 +4,8 @@
 # Remove Container(s) on Unix: docker rm -f $(docker ps -aqf "ancestor=yubiset_arch")
 # Remove with: docker image rm -f yubiset_arch
 
-FROM archlinux:latest
+FROM debian:latest
 
-RUN pacman -Sy --noconfirm libusb-compat
 
 RUN useradd -ms /bin/bash user
 ADD . /home/user/yubiset

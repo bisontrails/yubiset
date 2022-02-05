@@ -78,7 +78,7 @@ silentDel()
 #
 # cp -rf and pipe stdout and stderr to /dev/null
 #
-# Arg(s): File(s) to delete.
+# Arg(s): File(s) to copy.
 #
 silentCopy()
 {
@@ -124,4 +124,54 @@ press_any_key
 echo "Please insert your Yubikey"
 press_any_key
 echo "${NEW_SECTION}"
+}
+
+cleanup()
+{
+	silentDel "${keygen_input_copy}"
+	silentDel "${yubiset_temp_dir}"
+	echo
+}
+
+create_conf_backup()
+{
+	echo "Now making backup copies.."
+
+	if [[ -f "${gpg_home}/gpg.conf" ]]; then
+		echo "${gpg_home}/gpg.conf => ${gpg_home}/gpg.conf.backup.by.yubiset"
+		cp -f "${gpg_home}/gpg.conf" "${gpg_home}/gpg.conf.backup.by.yubiset" || { cleanup; end_with_error "Creating backup of gpg.conf failed."; }
+	fi
+
+	if [[ -f "${gpg_home}/gpg-agent.conf" ]]; then
+		echo "${gpg_home}/gpg-agent.conf => ${gpg_home}/gpg-agent.conf.backup.by.yubiset"
+		cp -f "${gpg_home}/gpg-agent.conf" "${gpg_home}/gpg-agent.conf.backup.by.yubiset" || { cleanup; end_with_error "Creating backup of gpg-agent.conf failed."; }
+	fi
+
+	if [[ -f "${gpg_home}/scdaemon.conf" ]]; then
+		echo "${gpg_home}/scdaemon.conf => ${gpg_home}/scdaemon.conf.backup.by.yubiset"
+		cp -f "${gpg_home}/scdaemon.conf" "${gpg_home}/scdaemon.conf.backup.by.yubiset" || { cleanup; end_with_error "Creating backup of gpg-agent.conf failed."; }
+	fi
+	echo "${SUCCESS}"
+	echo
+	echo "Now copying yubiset's conf files.."
+	
+	silentCopy "${conf_dir}/gpg.conf" "${gpg_home}/gpg.conf" || { cleanup; end_with_error "Replacing gpg.conf failed."; }
+	silentCopy "${conf_dir}/gpg-agent.conf" "${gpg_home}/gpg-agent.conf" || { cleanup; end_with_error "Replacing gpg-agent.conf failed."; }
+	silentCopy "${conf_dir}/scdaemon.conf" "${gpg_home}/scdaemon.conf" || { cleanup; end_with_error "Replacing gpg-agent.conf failed."; }
+
+	echo "${SUCCESS}"
+}
+
+print_init() {
+	pretty_print "OpenPGP key generation and Yubikey setup script"
+	pretty_print "Version: ${yubiset_version}"
+	pretty_print
+	pretty_print "gpg home:                ${gpg_home}"
+	pretty_print "Subkey length:           ${subkey_length} bit"
+	pretty_print "Yubiset tmp dir:         ${yubiset_temp_dir}"
+	pretty_print "Yubiset key backups dir: ${key_backups_dir}"
+	pretty_print "gpg:                     ${YUBISET_GPG_BIN}"
+	pretty_print "gpg-connect-agent:       ${YUBISET_GPG_CONNECT_AGENT}"
+	pretty_print "gpgconf:                 ${YUBISET_GPG_CONF}"
+echo
 }

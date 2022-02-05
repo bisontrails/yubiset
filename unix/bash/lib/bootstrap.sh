@@ -55,7 +55,7 @@ if [[ -z "${gpg_home}" ]]; then
 	# <<< means here-string, see https://askubuntu.com/questions/678915/whats-the-difference-between-and-in-bash
 	read -r _unused gpg_home <<< "${gpg_home}" || { cleanup; end_with_error "Could not determine gpg's home dir.";}
 	# Trim, see https://stackoverflow.com/a/3232433
-	gpg_home="$(echo -e "${gpg_home}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+	gpg_home="$(echo "${gpg_home}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 	unset IFS
 fi
 
