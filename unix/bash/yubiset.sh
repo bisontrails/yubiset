@@ -51,6 +51,15 @@ echo
 sed "s/FULL_NAME/${user_name}/g" "${ondevice_keygen_template}" > "${ondevice_keygen_input}"
 sed -i "" "s/EMAIL/${user_email}/g" "${ondevice_keygen_input}"
 
+#
+# DISABLE OTP
+#
+echo "${NEW_SECTION}"
+echo "Disabling OTP on Yubikey"
+(. ./disableotp.sh) || { cleanup; end_with_error "Could not Disable OTP on YubiKey." ; }
+echo "Ok, Yubikey OTP disabled"
+echo "${NEW_SECTION}"
+
 
 #
 # YUBIKEY SECTION
